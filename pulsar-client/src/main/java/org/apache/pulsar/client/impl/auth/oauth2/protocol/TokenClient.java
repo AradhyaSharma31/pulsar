@@ -50,7 +50,7 @@ public class TokenClient implements ClientCredentialsExchanger {
         this(tokenUrl, null);
     }
 
-    TokenClient(URL tokenUrl, AsyncHttpClient httpClient) {
+    public TokenClient(URL tokenUrl, AsyncHttpClient httpClient) {
         if (httpClient == null) {
             DefaultAsyncHttpClientConfig.Builder confBuilder = new DefaultAsyncHttpClientConfig.Builder();
             confBuilder.setCookieStore(null);
@@ -115,19 +115,19 @@ public class TokenClient implements ClientCredentialsExchanger {
                     .get();
 
             switch (res.getStatusCode()) {
-            case 200:
-                return ObjectMapperFactory.getMapper().reader().readValue(res.getResponseBodyAsBytes(),
-                        TokenResult.class);
+                case 200:
+                    return ObjectMapperFactory.getMapper().reader().readValue(res.getResponseBodyAsBytes(),
+                            TokenResult.class);
 
-            case 400: // Bad request
-            case 401: // Unauthorized
-                throw new TokenExchangeException(
-                        ObjectMapperFactory.getMapper().reader().readValue(res.getResponseBodyAsBytes(),
-                                TokenError.class));
+                case 400: // Bad request
+                case 401: // Unauthorized
+                    throw new TokenExchangeException(
+                            ObjectMapperFactory.getMapper().reader().readValue(res.getResponseBodyAsBytes(),
+                                    TokenError.class));
 
-            default:
-                throw new IOException(
-                        "Failed to perform HTTP request. res: " + res.getStatusCode() + " " + res.getStatusText());
+                default:
+                    throw new IOException(
+                            "Failed to perform HTTP request. res: " + res.getStatusCode() + " " + res.getStatusText());
             }
 
 

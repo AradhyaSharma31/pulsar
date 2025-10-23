@@ -27,15 +27,18 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Optional;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.apache.pulsar.client.api.AuthenticationInitContext;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.impl.auth.oauth2.protocol.ClientCredentialsExchangeRequest;
 import org.apache.pulsar.client.impl.auth.oauth2.protocol.ClientCredentialsExchanger;
 import org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenClient;
 import org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenExchangeException;
 import org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenResult;
+import org.asynchttpclient.AsyncHttpClient;
 
 /**
  * Implementation of OAuth 2.0 Client Credentials flow.
@@ -59,6 +62,8 @@ class ClientCredentialsFlow extends FlowBase {
 
     private boolean initialized = false;
 
+    private transient AuthenticationInitContext authContext;
+
     @Builder
     public ClientCredentialsFlow(URL issuerUrl, String audience, String privateKey, String scope) {
         super(issuerUrl);
@@ -67,13 +72,28 @@ class ClientCredentialsFlow extends FlowBase {
         this.scope = scope;
     }
 
+    public void setAuthContext(AuthenticationInitContext context) {
+        this.authContext = context;
+    }
+
     @Override
     public void initialize() throws PulsarClientException {
         super.initialize();
         assert this.metadata != null;
 
         URL tokenUrl = this.metadata.getTokenEndpoint();
-        this.exchanger = new TokenClient(tokenUrl);
+
+        if (authContext != null) {
+            // Try to get shared AsyncHttpClient from context
+            Optional<AsyncHttpClient> sharedHttpClient = authContext.getService(AsyncHttpClient.class);
+            this.exchanger = sharedHttpClient.map(
+                            asyncHttpClient ->
+                                    new TokenClient(tokenUrl, asyncHttpClient))
+                    .orElseGet(() -> new TokenClient(tokenUrl)
+                    );
+        } else {
+            this.exchanger = new TokenClient(tokenUrl);
+        }
         initialized = true;
     }
 
@@ -101,7 +121,7 @@ class ClientCredentialsFlow extends FlowBase {
             tr = this.exchanger.exchangeClientCredentials(req);
         } catch (TokenExchangeException | IOException e) {
             throw new PulsarClientException.AuthenticationException("Unable to obtain an access token: "
-                                                                    + e.getMessage());
+                    + e.getMessage());
         }
 
         return tr;

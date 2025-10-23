@@ -78,6 +78,17 @@ public interface Authentication extends Closeable, Serializable {
     void configure(Map<String, String> authParams);
 
     /**
+     * Initialize the authentication provider with shared resources.
+     *
+     * @param context the context providing access to shared services
+     * @throws PulsarClientException if authentication initialization fails
+     */
+    default void start(AuthenticationInitContext context) throws PulsarClientException {
+        // Default implementation calls the legacy method for backward compatibility
+        start();
+    }
+
+    /**
      * Initialize the authentication provider.
      */
     void start() throws PulsarClientException;
