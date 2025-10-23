@@ -22,6 +22,12 @@ public class AuthenticationInitContextImpl implements AuthenticationInitContext 
      * Register a service instance that can be retrieved by its class.
      */
     public <T> void registerService(Class<T> serviceClass, T serviceInstance) {
+        if (serviceClass == null) {
+            throw new NullPointerException("serviceClass cannot be null");
+        }
+        if (serviceInstance == null) {
+            throw new NullPointerException("serviceInstance cannot be null");
+        }
         servicesByClass.put(serviceClass, serviceInstance);
     }
 
@@ -29,6 +35,15 @@ public class AuthenticationInitContextImpl implements AuthenticationInitContext 
      * Register a service instance that can be retrieved by name and class.
      */
     public <T> void registerService(Class<T> serviceClass, String name, T serviceInstance) {
+        if (serviceClass == null) {
+            throw new NullPointerException("serviceClass cannot be null");
+        }
+        if (name == null) {
+            throw new NullPointerException("name cannot be null");
+        }
+        if (serviceInstance == null) {
+            throw new NullPointerException("serviceInstance cannot be null");
+        }
         String compositeKey = serviceClass.getName() + ":" + name;
         servicesByName.put(compositeKey, serviceInstance);
     }
