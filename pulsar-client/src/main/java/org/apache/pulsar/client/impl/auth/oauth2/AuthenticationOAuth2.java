@@ -26,7 +26,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.pulsar.client.api.Authentication;;
+import org.apache.pulsar.client.api.Authentication;
 import org.apache.pulsar.client.api.AuthenticationDataProvider;
 import org.apache.pulsar.client.api.AuthenticationInitContext;
 import org.apache.pulsar.client.api.EncodedAuthenticationParameterSupport;
