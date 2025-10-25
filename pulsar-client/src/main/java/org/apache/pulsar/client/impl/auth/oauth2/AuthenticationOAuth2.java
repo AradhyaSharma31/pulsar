@@ -28,6 +28,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Authentication;
 import org.apache.pulsar.client.api.AuthenticationDataProvider;
+import org.apache.pulsar.client.api.AuthenticationInitContext;
 import org.apache.pulsar.client.api.EncodedAuthenticationParameterSupport;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.impl.AuthenticationUtil;
@@ -53,7 +54,7 @@ public class AuthenticationOAuth2 implements Authentication, EncodedAuthenticati
         this.clock = Clock.systemDefaultZone();
     }
 
-    AuthenticationOAuth2(Flow flow, Clock clock) {
+    public AuthenticationOAuth2(Flow flow, Clock clock) {
         this.flow = flow;
         this.clock = clock;
     }
@@ -89,6 +90,15 @@ public class AuthenticationOAuth2 implements Authentication, EncodedAuthenticati
     @Deprecated
     public void configure(Map<String, String> authParams) {
         throw new NotImplementedException("Deprecated; use EncodedAuthenticationParameterSupport");
+    }
+
+    @Override
+    public void start(AuthenticationInitContext context) throws PulsarClientException {
+        // Pass context to flow so it can use shared resources
+        if (flow instanceof ClientCredentialsFlow) {
+            ((ClientCredentialsFlow) flow).setAuthContext(context);
+        }
+        flow.initialize();
     }
 
     @Override
