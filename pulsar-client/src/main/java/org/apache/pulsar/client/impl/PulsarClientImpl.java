@@ -200,7 +200,7 @@ public class PulsarClientImpl implements PulsarClient {
     }
 
     @Builder(builderClassName = "PulsarClientImplBuilder")
-    public PulsarClientImpl(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, ConnectionPool connectionPool,
+    PulsarClientImpl(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, ConnectionPool connectionPool,
                             Timer timer, ExecutorProvider externalExecutorProvider,
                             ExecutorProvider internalExecutorProvider,
                             ScheduledExecutorProvider scheduledExecutorProvider,
@@ -301,8 +301,6 @@ public class PulsarClientImpl implements PulsarClient {
             context.registerService(EventLoopGroup.class, eventLoopGroupReference);
             context.registerService(DnsResolverGroupImpl.class, dnsResolverGroup);
             context.registerService(Timer.class, this.timer);
-
-            // Or maybe use addressResolver instead:
             context.registerService(AddressResolver.class, this.addressResolver);
 
             // Pass context to authentication
