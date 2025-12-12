@@ -200,12 +200,12 @@ public class PulsarClientImpl implements PulsarClient {
     }
 
     @Builder(builderClassName = "PulsarClientImplBuilder")
-    PulsarClientImpl(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, ConnectionPool connectionPool,
-                     Timer timer, ExecutorProvider externalExecutorProvider,
-                     ExecutorProvider internalExecutorProvider,
-                     ScheduledExecutorProvider scheduledExecutorProvider,
-                     ExecutorProvider lookupExecutorProvider,
-                     DnsResolverGroupImpl dnsResolverGroup) throws PulsarClientException {
+    public PulsarClientImpl(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, ConnectionPool connectionPool,
+                            Timer timer, ExecutorProvider externalExecutorProvider,
+                            ExecutorProvider internalExecutorProvider,
+                            ScheduledExecutorProvider scheduledExecutorProvider,
+                            ExecutorProvider lookupExecutorProvider,
+                            DnsResolverGroupImpl dnsResolverGroup) throws PulsarClientException {
 
         EventLoopGroup eventLoopGroupReference = null;
         ConnectionPool connectionPoolReference = null;
@@ -228,7 +228,7 @@ public class PulsarClientImpl implements PulsarClient {
             this.eventLoopGroup = eventLoopGroupReference;
             this.instrumentProvider = new InstrumentProvider(conf.getOpenTelemetry());
             clientClock = conf.getClock();
-            conf.getAuthentication().start();
+
             this.scheduledExecutorProvider = scheduledExecutorProvider != null ? scheduledExecutorProvider :
                     PulsarClientResourcesConfigurer.createScheduledExecutorProvider(conf);
             if (connectionPool != null) {
@@ -302,6 +302,19 @@ public class PulsarClientImpl implements PulsarClient {
             } else {
                 memoryBufferStats = null;
             }
+
+            // Create AuthenticationInitContext and register shared resources
+            AuthenticationInitContextImpl context = new AuthenticationInitContextImpl();
+            context.registerService(EventLoopGroup.class, eventLoopGroupReference);
+            context.registerService(DnsResolverGroupImpl.class, dnsResolverGroup);
+            context.registerService(Timer.class, this.timer);
+
+            // Or maybe use addressResolver instead:
+            context.registerService(AddressResolver.class, this.addressResolver);
+
+            // Pass context to authentication
+            conf.getAuthentication().start(context);
+
             state.set(State.Open);
         } catch (Throwable t) {
             // Log the exception first, or it could be missed if there are any subsequent exceptions in the
