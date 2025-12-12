@@ -146,7 +146,7 @@ abstract class FlowBase implements Flow {
 
         boolean shouldRecreateHttpClient = false;
 
-        // Store EventLoopGroup if available (most important)
+        // Store EventLoopGroup if available
         if (sharedEventLoop.isPresent()) {
             this.eventLoopGroup = sharedEventLoop.get();
             shouldRecreateHttpClient = true;
