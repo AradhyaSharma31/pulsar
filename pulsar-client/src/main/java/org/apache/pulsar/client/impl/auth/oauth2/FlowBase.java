@@ -157,7 +157,6 @@ abstract class FlowBase implements Flow {
         if (sharedDnsResolver.isPresent()) {
             this.dnsResolverGroup = sharedDnsResolver.get();
             log.debug("Shared DnsResolverGroup available");
-            // TODO: Integrate with AsyncHttpClient in Phase 2
         }
 
         // Store Timer if available
