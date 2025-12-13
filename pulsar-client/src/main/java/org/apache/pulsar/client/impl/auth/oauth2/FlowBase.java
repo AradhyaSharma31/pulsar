@@ -180,6 +180,9 @@ abstract class FlowBase implements Flow {
     }
 
     protected MetadataResolver createMetadataResolver() {
+        if (httpClient == null) {
+            throw new IllegalStateException("HTTP client not initialized. Call initialize() first.");
+        }
         return DefaultMetadataResolver.fromIssuerUrl(issuerUrl, httpClient);
     }
 
@@ -217,6 +220,8 @@ abstract class FlowBase implements Flow {
 
     @Override
     public void close() throws Exception {
-        httpClient.close();
+        if (httpClient != null) {
+            httpClient.close();
+        }
     }
 }
