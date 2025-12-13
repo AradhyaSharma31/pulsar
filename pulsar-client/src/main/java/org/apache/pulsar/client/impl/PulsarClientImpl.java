@@ -300,16 +300,12 @@ public class PulsarClientImpl implements PulsarClient {
             AuthenticationInitContextImpl context = new AuthenticationInitContextImpl();
             context.registerService(EventLoopGroup.class, eventLoopGroupReference);
             context.registerService(Timer.class, this.timer);
-
             if (dnsResolverGroup != null) {
                 context.registerService(DnsResolverGroupImpl.class, dnsResolverGroup);
             }
             if (this.addressResolver != null) {
                 context.registerService(AddressResolver.class, this.addressResolver);
             }
-
-            conf.getAuthentication().start(context);
-
             // Pass context to authentication
             conf.getAuthentication().start(context);
 
