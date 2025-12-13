@@ -18,9 +18,11 @@
  */
 package org.apache.pulsar.client.api;
 
-import static org.mockito.Mockito.*;
-import static org.testng.Assert.*;
-
+import static org.mockito.Mockito.mock;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotSame;
+import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.Timer;
 import java.util.Optional;
