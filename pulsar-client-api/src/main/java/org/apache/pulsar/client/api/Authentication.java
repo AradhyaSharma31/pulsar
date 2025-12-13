@@ -80,6 +80,13 @@ public interface Authentication extends Closeable, Serializable {
     /**
      * Initialize the authentication provider.
      */
+    default void start(AuthenticationInitContext context) throws PulsarClientException {
+        start(); // Default calls old method for backward compatibility
+    }
+
+    /**
+     * Initialize the authentication provider.
+     */
     void start() throws PulsarClientException;
 
     /**
