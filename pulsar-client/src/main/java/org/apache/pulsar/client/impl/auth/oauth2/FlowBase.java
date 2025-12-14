@@ -18,7 +18,9 @@
  */
 package org.apache.pulsar.client.impl.auth.oauth2;
 
+import io.netty.channel.EventLoopGroup;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.util.Timer;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -26,11 +28,14 @@ import java.net.URL;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
+import java.util.Optional;
 import javax.net.ssl.SSLException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.PulsarVersion;
+import org.apache.pulsar.client.api.AuthenticationInitContext;
 import org.apache.pulsar.client.api.PulsarClientException;
+import org.apache.pulsar.client.impl.DnsResolverGroupImpl;
 import org.apache.pulsar.client.impl.auth.oauth2.protocol.DefaultMetadataResolver;
 import org.apache.pulsar.client.impl.auth.oauth2.protocol.Metadata;
 import org.apache.pulsar.client.impl.auth.oauth2.protocol.MetadataResolver;
@@ -54,27 +59,48 @@ abstract class FlowBase implements Flow {
     private static final long serialVersionUID = 1L;
 
     protected final URL issuerUrl;
-    protected final AsyncHttpClient httpClient;
+    protected final Duration connectTimeout;
+    protected final Duration readTimeout;
+    protected final String trustCertsFilePath;
+    protected AsyncHttpClient httpClient;
 
     protected transient Metadata metadata;
 
+    private transient EventLoopGroup eventLoopGroup;
+    private transient DnsResolverGroupImpl dnsResolverGroup;
+    private transient Timer timer;
+
     protected FlowBase(URL issuerUrl, Duration connectTimeout, Duration readTimeout, String trustCertsFilePath) {
         this.issuerUrl = issuerUrl;
-        this.httpClient = defaultHttpClient(readTimeout, connectTimeout, trustCertsFilePath);
+        this.connectTimeout = connectTimeout;
+        this.readTimeout = readTimeout;
+        this.trustCertsFilePath = trustCertsFilePath;
     }
 
-    private AsyncHttpClient defaultHttpClient(Duration readTimeout, Duration connectTimeout,
-                                              String trustCertsFilePath) {
+    private AsyncHttpClient createHttpClient() {
         DefaultAsyncHttpClientConfig.Builder confBuilder = new DefaultAsyncHttpClientConfig.Builder();
         confBuilder.setCookieStore(null);
         confBuilder.setUseProxyProperties(true);
         confBuilder.setFollowRedirect(true);
         confBuilder.setConnectTimeout(
-                getParameterDurationToMillis(CONFIG_PARAM_CONNECT_TIMEOUT, connectTimeout,
+                getParameterDurationToMillis(CONFIG_PARAM_CONNECT_TIMEOUT, this.connectTimeout,
                         DEFAULT_CONNECT_TIMEOUT));
         confBuilder.setReadTimeout(
-                getParameterDurationToMillis(CONFIG_PARAM_READ_TIMEOUT, readTimeout, DEFAULT_READ_TIMEOUT));
+                getParameterDurationToMillis(CONFIG_PARAM_READ_TIMEOUT, this.readTimeout, DEFAULT_READ_TIMEOUT));
         confBuilder.setUserAgent(String.format("Pulsar-Java-v%s", PulsarVersion.getVersion()));
+
+        // Use shared EventLoopGroup if available
+        if (eventLoopGroup != null) {
+            confBuilder.setEventLoopGroup(eventLoopGroup);
+            log.debug("Using shared EventLoopGroup for OAuth2 HTTP client");
+        }
+
+        // Use shared timer if available
+        if (timer != null) {
+            confBuilder.setNettyTimer(timer);
+            log.debug("Shared Timer available for OAuth2 HTTP client");
+        }
+
         if (StringUtils.isNotBlank(trustCertsFilePath)) {
             try {
                 confBuilder.setSslContext(SslContextBuilder.forClient()
@@ -101,6 +127,10 @@ abstract class FlowBase implements Flow {
     }
 
     public void initialize() throws PulsarClientException {
+        // Create default HTTP client
+        if (this.httpClient == null) {
+            this.httpClient = createHttpClient();
+        }
         try {
             this.metadata = createMetadataResolver().resolve();
         } catch (IOException e) {
@@ -109,7 +139,50 @@ abstract class FlowBase implements Flow {
         }
     }
 
+    public void initialize(AuthenticationInitContext context) throws PulsarClientException {
+        Optional<EventLoopGroup> sharedEventLoop = context.getService(EventLoopGroup.class);
+        Optional<Timer> sharedTimer = context.getService(Timer.class);
+        Optional<DnsResolverGroupImpl> sharedDnsResolver = context.getService(DnsResolverGroupImpl.class);
+
+        boolean shouldRecreateHttpClient = false;
+
+        // Store EventLoopGroup if available
+        if (sharedEventLoop.isPresent()) {
+            this.eventLoopGroup = sharedEventLoop.get();
+            shouldRecreateHttpClient = true;
+            log.debug("Using shared EventLoopGroup");
+        }
+
+        // Store DnsResolverGroup if available
+        if (sharedDnsResolver.isPresent()) {
+            this.dnsResolverGroup = sharedDnsResolver.get();
+            log.debug("Shared DnsResolverGroup available");
+        }
+
+        // Store Timer if available
+        if (sharedTimer.isPresent()) {
+            this.timer = sharedTimer.get();
+            log.debug("Shared Timer available");
+            // TODO: Use for token refresh in Phase 3
+        }
+
+        // Recreate HTTP client if EventLoopGroup changed
+        if (shouldRecreateHttpClient && this.httpClient != null) {
+            try {
+                this.httpClient.close();
+            } catch (IOException e) {
+                log.warn("Error closing existing HTTP client", e);
+            }
+            this.httpClient = null; // Will be recreated in initialize()
+        }
+
+        initialize();
+    }
+
     protected MetadataResolver createMetadataResolver() {
+        if (httpClient == null) {
+            throw new IllegalStateException("HTTP client not initialized. Call initialize() first.");
+        }
         return DefaultMetadataResolver.fromIssuerUrl(issuerUrl, httpClient);
     }
 
@@ -147,6 +220,8 @@ abstract class FlowBase implements Flow {
 
     @Override
     public void close() throws Exception {
-        httpClient.close();
+        if (httpClient != null) {
+            httpClient.close();
+        }
     }
 }

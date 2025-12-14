@@ -1548,7 +1548,7 @@ public class ServiceConfiguration implements PulsarConfiguration {
     @FieldContext(
             category = CATEGORY_SERVER,
             doc = "Max number of snapshot to be cached per subscription.")
-    private int replicatedSubscriptionsSnapshotMaxCachedPerSubscription = 10;
+    private int replicatedSubscriptionsSnapshotMaxCachedPerSubscription = 30;
 
     @FieldContext(
             category = CATEGORY_SERVER,
@@ -2994,7 +2994,11 @@ public class ServiceConfiguration implements PulsarConfiguration {
         doc = "Option to override the auto-detected network interfaces max speed"
     )
     private Optional<Double> loadBalancerOverrideBrokerNicSpeedGbps = Optional.empty();
-
+    @FieldContext(
+            category = CATEGORY_LOAD_BALANCER,
+            doc = "Option to override the auto-detected network interfaces"
+    )
+    private List<String> loadBalancerOverrideBrokerNics = new ArrayList<>();
     @FieldContext(
         category = CATEGORY_LOAD_BALANCER,
         dynamic = true,

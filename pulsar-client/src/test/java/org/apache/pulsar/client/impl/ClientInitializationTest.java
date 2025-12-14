@@ -18,11 +18,13 @@
  */
 package org.apache.pulsar.client.impl;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import lombok.Cleanup;
 import org.apache.pulsar.client.api.Authentication;
+import org.apache.pulsar.client.api.AuthenticationInitContext;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.testng.annotations.Test;
@@ -40,7 +42,7 @@ public class ClientInitializationTest {
                 .authentication(auth)
                 .build();
 
-        verify(auth).start();
+        verify(auth).start(any(AuthenticationInitContext.class));
         verify(auth, times(0)).getAuthData();
     }
 }

@@ -28,6 +28,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pulsar.client.api.Authentication;
 import org.apache.pulsar.client.api.AuthenticationDataProvider;
+import org.apache.pulsar.client.api.AuthenticationInitContext;
 import org.apache.pulsar.client.api.EncodedAuthenticationParameterSupport;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.impl.AuthenticationUtil;
@@ -44,6 +45,7 @@ public class AuthenticationOAuth2 implements Authentication, EncodedAuthenticati
     public static final String AUTH_METHOD_NAME = "token";
     public static final double EXPIRY_ADJUSTMENT = 0.9;
     private static final long serialVersionUID = 1L;
+    private transient AuthenticationInitContext context;
 
     final Clock clock;
     Flow flow;
@@ -92,8 +94,18 @@ public class AuthenticationOAuth2 implements Authentication, EncodedAuthenticati
     }
 
     @Override
+    public void start(AuthenticationInitContext context) throws PulsarClientException {
+        this.context = context;
+        start();
+    }
+
+    @Override
     public void start() throws PulsarClientException {
-        flow.initialize();
+        if (flow instanceof FlowBase && context != null) {
+            ((FlowBase) flow).initialize(context);
+        } else {
+            flow.initialize();
+        }
     }
 
     @Override
