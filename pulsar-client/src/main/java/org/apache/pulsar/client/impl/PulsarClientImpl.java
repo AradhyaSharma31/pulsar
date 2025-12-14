@@ -201,11 +201,11 @@ public class PulsarClientImpl implements PulsarClient {
 
     @Builder(builderClassName = "PulsarClientImplBuilder")
     PulsarClientImpl(ClientConfigurationData conf, EventLoopGroup eventLoopGroup, ConnectionPool connectionPool,
-                            Timer timer, ExecutorProvider externalExecutorProvider,
-                            ExecutorProvider internalExecutorProvider,
-                            ScheduledExecutorProvider scheduledExecutorProvider,
-                            ExecutorProvider lookupExecutorProvider,
-                            DnsResolverGroupImpl dnsResolverGroup) throws PulsarClientException {
+                     Timer timer, ExecutorProvider externalExecutorProvider,
+                     ExecutorProvider internalExecutorProvider,
+                     ScheduledExecutorProvider scheduledExecutorProvider,
+                     ExecutorProvider lookupExecutorProvider,
+                     DnsResolverGroupImpl dnsResolverGroup) throws PulsarClientException {
 
         EventLoopGroup eventLoopGroupReference = null;
         ConnectionPool connectionPoolReference = null;
