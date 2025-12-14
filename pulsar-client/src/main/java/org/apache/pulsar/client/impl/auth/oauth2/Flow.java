@@ -26,7 +26,7 @@ import org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenResult;
 /**
  * An OAuth 2.0 authorization flow.
  */
-public interface Flow extends Serializable, AutoCloseable {
+interface Flow extends Serializable, AutoCloseable {
 
     /**
      * Initializes the authorization flow.
