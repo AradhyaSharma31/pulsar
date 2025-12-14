@@ -28,6 +28,7 @@ pulsar-functions/worker/src/test/resources/
 
 # IntelliJ
 .idea/*
+.idea/icon.svg
 !.idea/vcs.xml
 *.iml
 *.iws
